@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
   <title>2048</title>
   <script>
-    // Resolve theme before first paint: saved choice wins, else follow the OS.
+    // Resolve theme before first paint. Dark unless the player chose light:
+    // on the additive waveguide a light page is a bright panel, so the OS
+    // preference is deliberately ignored.
     (function() {
       var t = null;
       try { t = localStorage.getItem('2048mrbd-theme'); } catch (e) {}
-      if (t !== 'light' && t !== 'dark')
-        t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
     })();
   </script>
   <style>
@@ -518,18 +518,6 @@
       toggleTheme();
       this.blur();  // keep arrow keys going to the game
     });
-
-    // Follow OS changes until the player picks a theme explicitly
-    if (window.matchMedia) {
-      var mq = matchMedia('(prefers-color-scheme: light)');
-      var onOsChange = function() {
-        var saved = null;
-        try { saved = localStorage.getItem('2048mrbd-theme'); } catch (e) {}
-        if (!saved) applyTheme(mq.matches ? 'light' : 'dark');
-      };
-      if (mq.addEventListener) mq.addEventListener('change', onOsChange);
-      else if (mq.addListener) mq.addListener(onOsChange);
-    }
 
     applyTheme(document.documentElement.getAttribute('data-theme'));
 
