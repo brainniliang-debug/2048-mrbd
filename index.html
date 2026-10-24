@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
   <title>2048</title>
+  <script>
+    // Resolve theme before first paint: saved choice wins, else follow the OS.
+    (function() {
+      var t = null;
+      try { t = localStorage.getItem('2048mrbd-theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark')
+        t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -65,6 +75,21 @@
       font-size: 20px;
       font-weight: bold;
       color: #ffd700;
+    }
+
+    .theme-btn {
+      width: 44px;
+      background: #0d0d0d;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      color: #ffd700;
+      font-size: 20px;
+      cursor: pointer;
+      outline: none;
+    }
+    .theme-btn:focus {
+      outline: 3px solid #00d4ff;
+      outline-offset: 2px;
     }
 
     /* ── Grid ───────────────────────────────────────────── */
@@ -156,6 +181,9 @@
       letter-spacing: 2px;
     }
 
+    .over-title { color: #ff5e3a; text-shadow: 0 0 24px rgba(255,94,58,.6); }
+    .win-title  { color: #ffd700; text-shadow: 0 0 24px rgba(255,215,0,.7); }
+
     .overlay-sub {
       font-size: 20px;
       color: #777;
@@ -201,6 +229,42 @@
       font-weight: normal;
       letter-spacing: 0.5px;
     }
+
+    /* ── Light theme ────────────────────────────────────── */
+    /* Dark (above) is the default and the no-JS fallback.   */
+    /* Light drops the glow and uses dark text on pastels.   */
+    [data-theme="light"] body         { background: #faf8ef; color: #3c3a32; }
+    [data-theme="light"] .title       { color: #b45309; text-shadow: none; }
+    [data-theme="light"] .score-box,
+    [data-theme="light"] .theme-btn   { background: #fff; border-color: #e7e2d4; }
+    [data-theme="light"] .score-label { color: #78716c; }
+    [data-theme="light"] .score-value,
+    [data-theme="light"] .theme-btn   { color: #b45309; }
+    [data-theme="light"] .grid-wrapper { background: #d6d0bf; border-color: #c9c2ae; }
+    [data-theme="light"] .cell        { background: #e7e2d4; text-shadow: none; box-shadow: none; }
+
+    [data-theme="light"] .t2    { background: #dbeafe; color: #1e3a8a; }
+    [data-theme="light"] .t4    { background: #d1fae5; color: #065f46; }
+    [data-theme="light"] .t8    { background: #ffedd5; color: #9a3412; }
+    [data-theme="light"] .t16   { background: #fecaca; color: #991b1b; }
+    [data-theme="light"] .t32   { background: #fef08a; color: #713f12; }
+    [data-theme="light"] .t64   { background: #ddd6fe; color: #4c1d95; }
+    [data-theme="light"] .t128  { background: #fbcfe8; color: #831843; }
+    [data-theme="light"] .t256  { background: #99f6e4; color: #134e4a; }
+    [data-theme="light"] .t512  { background: #d9f99d; color: #365314; }
+    [data-theme="light"] .t1024 { background: #34d399; color: #022c22; }
+    [data-theme="light"] .t2048 { background: #fbbf24; color: #451a03;
+                                   box-shadow: 0 0 16px rgba(251,191,36,.6); }
+    [data-theme="light"] .t-hi  { background: #a21caf; color: #fff;
+                                   box-shadow: 0 0 16px rgba(162,28,175,.5); }
+
+    [data-theme="light"] .overlay     { background: rgba(250, 248, 239, 0.92); }
+    [data-theme="light"] .over-title  { color: #c2410c; text-shadow: none; }
+    [data-theme="light"] .win-title   { color: #b45309; text-shadow: none; }
+    [data-theme="light"] .overlay-sub { color: #57534e; }
+    [data-theme="light"] .btn         { background: #b45309; color: #fff; }
+    [data-theme="light"] .btn-alt     { background: #e7e2d4; color: #44403c; }
+    [data-theme="light"] .hint        { color: #a8a29e; }
   </style>
 </head>
 <body>
@@ -216,6 +280,7 @@
         <div class="score-label">Best</div>
         <div class="score-value" id="best">0</div>
       </div>
+      <button class="theme-btn" id="btnTheme" aria-label="Toggle dark mode"></button>
     </div>
   </div>
 
@@ -223,11 +288,11 @@
     <div class="grid" id="grid"></div>
   </div>
 
-  <div class="hint">swipe to move &nbsp;·&nbsp; middle pinch for menu</div>
+  <div class="hint">swipe to move &nbsp;·&nbsp; middle pinch for menu &nbsp;·&nbsp; T for theme</div>
 
   <!-- ── Game Over overlay ─────────────────────────────── -->
   <div class="overlay hidden" id="overlayOver">
-    <div class="overlay-title" style="color:#ff5e3a;text-shadow:0 0 24px rgba(255,94,58,.6)">
+    <div class="overlay-title over-title">
       Game Over
     </div>
     <div class="overlay-sub">No more moves!</div>
@@ -236,7 +301,7 @@
 
   <!-- ── Win overlay ───────────────────────────────────── -->
   <div class="overlay hidden" id="overlayWin">
-    <div class="overlay-title" style="color:#ffd700;text-shadow:0 0 24px rgba(255,215,0,.7)">
+    <div class="overlay-title win-title">
       You Win!
     </div>
     <div class="overlay-sub">You reached 2048!</div>
@@ -392,6 +457,8 @@
     };
 
     document.addEventListener('keydown', function(e) {
+      if (e.key === 't' || e.key === 'T') { toggleTheme(); return; }
+
       // If an overlay is visible, let focussed buttons handle Enter naturally
       if (!document.getElementById('overlayOver').classList.contains('hidden') ||
           !document.getElementById('overlayWin').classList.contains('hidden')) return;
@@ -431,6 +498,40 @@
       hide('overlayWin');
     });
     document.getElementById('btnNewGame').addEventListener('click', init);
+
+    // ── Theme ─────────────────────────────────────────────
+
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      var btn = document.getElementById('btnTheme');
+      btn.textContent = t === 'dark' ? '☀' : '☾';
+      btn.title = t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    }
+
+    function toggleTheme() {
+      var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('2048mrbd-theme', t); } catch (e) {}
+      applyTheme(t);
+    }
+
+    document.getElementById('btnTheme').addEventListener('click', function() {
+      toggleTheme();
+      this.blur();  // keep arrow keys going to the game
+    });
+
+    // Follow OS changes until the player picks a theme explicitly
+    if (window.matchMedia) {
+      var mq = matchMedia('(prefers-color-scheme: light)');
+      var onOsChange = function() {
+        var saved = null;
+        try { saved = localStorage.getItem('2048mrbd-theme'); } catch (e) {}
+        if (!saved) applyTheme(mq.matches ? 'light' : 'dark');
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onOsChange);
+      else if (mq.addListener) mq.addListener(onOsChange);
+    }
+
+    applyTheme(document.documentElement.getAttribute('data-theme'));
 
     // ── Start ─────────────────────────────────────────────
     init();
